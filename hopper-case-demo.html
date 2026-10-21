@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>HTS Partner Agent Demo</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one centred demo window like a product-site chat demo: scenario tabs, a hairline card, a scripted conversation that plays in order. Single light look. */
+:root{
+  --page:#F6F4F7;
+  --card:#FFFFFF;
+  --ink:#1D1A21;
+  --mute:#6E6875;
+  --line:#E4DFE7;
+  --bubble:#F2F0F4;
+  --plum:#561845;
+  --berry:#C22E6C;
+  --good:#1F7A4D;
+  --warn:#B26A00;
+  --bad:#C0392B;
+  --sans:"Geist","Helvetica Neue",Helvetica,Arial,sans-serif;
+  --mono:"Geist Mono",Menlo,Monaco,"Courier New",monospace;
+}
+*{box-sizing:border-box}
+html{background:var(--page)}
+body{margin:0;min-height:100vh;background:var(--page);background-image:radial-gradient(900px 420px at 50% -120px,rgba(194,46,108,.10),transparent 70%);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.55;-webkit-text-size-adjust:100%}
+.wrap{max-width:860px;margin:0 auto;padding-top:36px;padding-bottom:48px;padding-left:16px;padding-right:16px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+
+.top{text-align:center;margin-bottom:22px}
+.kicker{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--berry)}
+.top h1{margin:8px 0 6px;font-size:28px;line-height:1.15;font-weight:700;letter-spacing:-.01em;text-wrap:balance}
+.top p{margin:0 auto;max-width:36em;color:var(--mute)}
+
+.tabs{text-align:center;margin:22px 0 16px;font-size:0}
+.tab{display:inline-block;margin:0 4px 8px;font-family:var(--sans);font-size:15px;font-weight:500;color:var(--mute);background:rgba(255,255,255,.55);border:1px solid var(--line);border-radius:999px;padding:9px 18px;cursor:pointer}
+.tab[aria-selected="true"]{color:var(--ink);background:#fff;border-color:#CFC6D4;box-shadow:0 1px 2px rgba(29,26,33,.06)}
+.tab:focus-visible,.btn:focus-visible,.steps-toggle:focus-visible,.replay:focus-visible{outline:2px solid var(--berry);outline-offset:2px}
+
+.window{background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:0 10px 40px rgba(86,24,69,.06)}
+.winbar{display:-webkit-box;display:flex;-webkit-box-align:center;align-items:center;-webkit-box-pack:justify;justify-content:space-between;border-bottom:1px solid var(--line);padding:14px 20px}
+.wintitle{font-weight:600;font-size:15px}
+.wintitle span{font-weight:400;color:var(--mute);margin-left:6px}
+.replay{font:inherit;font-size:13px;color:var(--mute);background:none;border:1px solid var(--line);border-radius:999px;padding:5px 12px;cursor:pointer}
+.chat{padding:22px 24px 8px;min-height:560px}
+.inner{max-width:680px;margin:0 auto}
+
+.msg{margin-bottom:18px;opacity:1;-webkit-transition:opacity .35s ease,-webkit-transform .35s ease;transition:opacity .35s ease,transform .35s ease}
+.msg.enter{opacity:0;-webkit-transform:translateY(8px);transform:translateY(8px)}
+.user{background:var(--bubble);border-radius:14px;padding:12px 16px}
+.who{display:-webkit-box;display:flex;-webkit-box-align:center;align-items:center;font-weight:600;font-size:14px;margin-bottom:2px}
+.av{width:20px;height:20px;border-radius:5px;background:var(--plum);color:#fff;font-size:10px;font-weight:600;text-align:center;line-height:20px;margin-right:8px;flex:none}
+.role{font-weight:400;color:var(--mute);margin-left:6px}
+.agentname{font-size:14px;color:var(--mute);margin-bottom:4px}
+.agentname b{font-weight:600;color:var(--ink)}
+
+.steps-toggle{font:inherit;display:-webkit-inline-box;display:inline-flex;-webkit-box-align:center;align-items:center;background:none;border:0;padding:2px 0;margin:0 0 8px;color:var(--mute);cursor:pointer;font-size:14px}
+.chev{display:inline-block;width:14px;margin-right:6px;-webkit-transition:-webkit-transform .2s;transition:transform .2s}
+.steps-toggle[aria-expanded="true"] .chev{-webkit-transform:rotate(90deg);transform:rotate(90deg)}
+.tool{display:inline-block;min-width:22px;height:22px;padding:0 5px;border:1px solid var(--line);border-radius:6px;font-family:var(--mono);font-size:10.5px;line-height:20px;text-align:center;color:var(--plum);background:#fff;margin-right:4px}
+.stepcount{margin-left:4px}
+.spinner{display:inline-block;width:12px;height:12px;border:2px solid var(--line);border-top-color:var(--berry);border-radius:50%;margin-left:8px;-webkit-animation:spin .8s linear infinite;animation:spin .8s linear infinite}
+@-webkit-keyframes spin{to{-webkit-transform:rotate(360deg)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.steplist{margin:0 0 12px;padding:10px 14px;list-style:none;border-left:2px solid var(--line);background:#FBFAFC;border-radius:0 10px 10px 0}
+.steplist li{font-size:13.5px;color:var(--mute);padding:3px 0}
+.steplist li b{color:var(--ink);font-weight:500}
+
+.body p{margin:0 0 10px}
+.body h4{margin:14px 0 8px;font-size:15px;font-weight:600}
+.body ol,.body ul{margin:0 0 10px;padding-left:22px}
+.body li{margin-bottom:6px}
+hr.rule{border:0;border-top:1px solid var(--line);margin:14px 0}
+.tablewrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:4px 0 12px;border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%;min-width:600px;font-size:14px}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{background:#F7F5F8;font-weight:600;font-size:13px;color:var(--mute)}
+tr:last-child td{border-bottom:0}
+.tag{display:inline-block;font-family:var(--mono);font-size:11px;letter-spacing:.04em;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--plum);background:#fff;white-space:nowrap}
+.urg{white-space:nowrap}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:1px}
+.d-bad{background:var(--bad)}.d-warn{background:var(--warn)}.d-ok{background:var(--good)}.d-low{background:#B9B2BE}
+.ptype{display:block;font-size:12px;color:var(--mute);margin-top:2px;white-space:nowrap}
+.statline{font-weight:600}
+.statline span{color:var(--mute);font-weight:400}
+.flag{color:var(--bad);font-weight:600}
+
+.draft{border:1px solid var(--line);border-radius:12px;margin:8px 0 12px;overflow:hidden}
+.draft-head{background:#F7F5F8;border-bottom:1px solid var(--line);padding:9px 14px;font-size:13px;color:var(--mute)}
+.draft-head b{color:var(--ink);font-weight:600}
+.draft-body{padding:12px 14px}
+.draft-body p{margin:0 0 8px}
+.draft-actions{border-top:1px solid var(--line);padding:10px 14px;font-size:0}
+.btn{font-family:var(--sans);font-size:14px;font-weight:600;border-radius:9px;padding:8px 14px;cursor:pointer;margin-right:8px;border:1px solid var(--ink)}
+.btn.primary{background:var(--ink);color:#fff}
+.btn.ghost{background:#fff;color:var(--ink);border-color:var(--line)}
+.posted{font-size:14px;color:var(--good);font-weight:600}
+
+.progress{height:8px;background:#EFEBF1;border-radius:999px;overflow:hidden;margin:6px 0 14px}
+.progress i{display:block;height:100%;background:var(--berry);border-radius:999px}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);grid-gap:10px;margin:6px 0 14px}
+.tile{border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.tile small{display:block;font-size:12px;color:var(--mute)}
+.tile b{display:block;font-size:22px;font-weight:700;margin-top:2px;font-variant-numeric:tabular-nums}
+.tile em{font-style:normal;font-size:12.5px;color:var(--good)}
+.tile em.neg{color:var(--bad)}
+
+.composer{margin:8px 24px 22px;border:1px solid var(--line);border-radius:14px;padding:14px 16px;color:#A8A1AD;display:-webkit-box;display:flex;-webkit-box-pack:justify;justify-content:space-between;-webkit-box-align:center;align-items:center}
+.send{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#F5B9D2,#C9B6F2);flex:none}
+.foot{text-align:center;color:var(--mute);font-size:12.5px;margin-top:16px}
+
+@media (max-width:560px){
+  .top h1{font-size:23px}
+  .chat{padding:18px 14px 6px}
+  .composer{margin:6px 14px 16px}
+  .tiles{grid-template-columns:1fr}
+  .tab{font-size:14px;padding:8px 14px}
+}
+@media (prefers-reduced-motion:reduce){.msg{-webkit-transition:none;transition:none}.spinner{-webkit-animation:none;animation:none}}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="kicker">Concept demo · Built on Gumloop</div>
+    <h1>An agent for Hopper's partner teams</h1>
+    <p>What a Technical Account Manager at HTS could ask in Slack each morning, and what the agent does with each request.</p>
+  </header>
+
+  <div class="tabs" role="tablist" aria-label="Demo scenarios">
+    <button class="tab" role="tab" id="t-triage" aria-selected="true" data-s="triage">Partner Triage</button>
+    <button class="tab" role="tab" id="t-onb" aria-selected="false" data-s="onb">Onboarding Tracker</button>
+    <button class="tab" role="tab" id="t-qbr" aria-selected="false" data-s="qbr">Partner Review Prep</button>
+  </div>
+
+  <div class="window">
+    <div class="winbar">
+      <div class="wintitle" id="wintitle">Partner Triage <span>#tam-maya · Slack</span></div>
+      <button class="replay" id="replay" type="button">↻ Replay</button>
+    </div>
+    <div class="chat" id="chat" aria-live="polite"><div class="inner" id="inner"></div></div>
+    <div class="composer" aria-hidden="true"><span>Ask a follow-up question…</span><span class="send"></span></div>
+  </div>
+
+  <p class="foot">Concept by Beg. Sample data only; partner names are fictional. Not an official Gumloop or Hopper product.</p>
+</div>
+
+<script>
+(function(){
+  var U = {name:'Maya Chen', role:'TAM, HTS', ini:'MC'};
+
+  var S = {
+    triage:{
+      title:'Partner Triage <span>#tam-maya · Slack</span>',
+      flow:[
+        {t:'user', text:"What came in from partners overnight? Anything urgent?"},
+        {t:'agent', tools:['Sl','HA','SF','Ji'], steps:[
+          '<b>Slack</b> · read 14 new messages across 6 partner channels',
+          '<b>HTS Assist</b> · pulled 1 traveler escalation it couldn\'t resolve',
+          '<b>Salesforce</b> · matched each request to its partner account',
+          '<b>Jira</b> · checked 9 open tickets for duplicates'],
+         html:
+          '<p>Here\'s the overnight intake (Tue, Oct 20, 7:45 am):</p>'+
+          '<p class="statline">15 requests <span>·</span> 2 urgent <span>·</span> 9 draft replies ready</p>'+
+          '<div class="tablewrap"><table><thead><tr><th>Partner</th><th>Request</th><th>Tag</th><th>Urgency</th><th>Route to</th></tr></thead><tbody>'+
+          '<tr><td>Northwind Air<small class="ptype">Airline · fintech API</small></td><td>Cancel for Any Reason quotes timing out at checkout</td><td><span class="tag">BUG</span></td><td class="urg"><span class="dot d-bad"></span>Urgent</td><td>Fintech API eng</td></tr>'+
+          '<tr><td>Maple Bank<small class="ptype">Bank · travel portal</small></td><td>Cancel for Any Reason missing in their iOS portal</td><td><span class="tag">BUG</span></td><td class="urg"><span class="dot d-bad"></span>Urgent</td><td>Portal eng</td></tr>'+
+          '<tr><td>Coastal Rewards<small class="ptype">Loyalty · travel portal</small></td><td>Change points-to-cash ratio</td><td><span class="tag">CONFIG</span></td><td class="urg"><span class="dot d-ok"></span>Normal</td><td>Partner config</td></tr>'+
+          '<tr><td>Lumen Card<small class="ptype">Card issuer · travel portal</small></td><td>October bookings report</td><td><span class="tag">REPORT</span></td><td class="urg"><span class="dot d-ok"></span>Normal</td><td>Draft ready</td></tr>'+
+          '<tr><td>Pinecrest Bank<small class="ptype">Bank · travel portal</small></td><td>Traveler refund stuck after a cancellation</td><td><span class="tag">ESCALATION</span><small class="ptype">via HTS Assist</small></td><td class="urg"><span class="dot d-warn"></span>High</td><td>Partner support</td></tr>'+
+          '<tr><td>Harbor Air<small class="ptype">Airline · fintech API</small></td><td>Add Price Freeze to their checkout</td><td><span class="tag">FEATURE</span></td><td class="urg"><span class="dot d-low"></span>Low</td><td>Product backlog</td></tr>'+
+          '<tr><td>+ 9 more</td><td>Routine how-to questions</td><td><span class="tag">QUESTION</span></td><td class="urg"><span class="dot d-ok"></span>Normal</td><td>Drafts ready</td></tr>'+
+          '</tbody></table></div>'+
+          '<h4><span class="flag">Needs you now</span></h4>'+
+          '<ol><li><b>Northwind Air</b>: Cancel for Any Reason quotes timing out on their checkout since 2:10 am. 38% of quote requests fail, so travelers can\'t add the coverage. No matching ticket exists.</li>'+
+          '<li><b>Maple Bank</b>: Cancel for Any Reason disappeared from their iOS portal after Friday\'s release. Looks like a repeat of HTS-4790, closed last week.</li></ol>'+
+          '<p>Want me to open tickets for both and draft a reply to Northwind?</p>'},
+        {t:'user', text:"Yes, open both tickets and draft the Northwind reply."},
+        {t:'agent', tools:['Ji','Sl'], steps:[
+          '<b>Jira</b> · created HTS-4821 (P1) and HTS-4822, linked HTS-4790',
+          '<b>Slack</b> · drafted a reply in the #partner-northwind thread'],
+         html:
+          '<p>Done. Both tickets are open and assigned. The Northwind reply is waiting for your OK:</p>'+
+          '<div class="draft"><div class="draft-head">Reply in <b>#partner-northwind</b> · not posted yet</div>'+
+          '<div class="draft-body"><p>Hi Sam, thanks for flagging this. We\'ve confirmed Cancel for Any Reason quotes are timing out on your checkout, and our fintech API team is on it as a P1 (ref HTS-4821).</p><p>I\'ll update you here by 10:00 am ET, or sooner once a fix is in.</p><p>Maya</p></div>'+
+          '<div class="draft-actions" data-approve="1"><button class="btn primary" type="button" data-act="approve">Approve and post</button><button class="btn ghost" type="button" data-act="edit">Edit</button></div></div>'+
+          '<p>I also sent the Pinecrest refund case to partner support with the HTS Assist transcript attached. The 9 routine drafts are in your review queue. Once you trust them, these tags can post without approval.</p>'}
+      ]
+    },
+    onb:{
+      title:'Onboarding Tracker <span>#tam-maya · Slack</span>',
+      flow:[
+        {t:'user', text:"Where are we with Coastal Rewards onboarding? Launch is Nov 18."},
+        {t:'agent', tools:['As','SF','Gm'], steps:[
+          '<b>Asana</b> · pulled the Coastal Rewards launch checklist',
+          '<b>Salesforce</b> · checked contract milestones and contacts',
+          '<b>Gmail</b> · scanned the last 30 days of partner email'],
+         html:
+          '<p><b>9 of 14 steps done</b>, 29 days to launch. Two steps are stalled.</p>'+
+          '<div class="progress" aria-hidden="true"><i style="width:64%"></i></div>'+
+          '<div class="tablewrap"><table><thead><tr><th>Step</th><th>Owner</th><th>Due</th><th>Status</th></tr></thead><tbody>'+
+          '<tr><td>Brand assets from partner</td><td>Coastal marketing</td><td>Oct 14</td><td class="urg"><span class="dot d-bad"></span>Stalled, 6 days late</td></tr>'+
+          '<tr><td>Points API credentials</td><td>Coastal IT</td><td>Oct 22</td><td class="urg"><span class="dot d-warn"></span>Waiting on partner</td></tr>'+
+          '<tr><td>Portal theme build</td><td>HTS web team</td><td>Oct 30</td><td class="urg"><span class="dot d-ok"></span>On track</td></tr>'+
+          '<tr><td>Fintech product setup</td><td>HTS fintech</td><td>Nov 4</td><td class="urg"><span class="dot d-ok"></span>On track</td></tr>'+
+          '<tr><td>Launch QA</td><td>HTS QA</td><td>Nov 12</td><td class="urg"><span class="dot d-low"></span>Not started</td></tr>'+
+          '</tbody></table></div>'+
+          '<p>The theme build can\'t start without the brand assets, so that one puts the Nov 18 date at risk. Want me to nudge Coastal\'s marketing lead?</p>'},
+        {t:'user', text:"Yes, nudge them, and copy their IT contact about the credentials."},
+        {t:'agent', tools:['Gm'], steps:['<b>Gmail</b> · drafted an email to Coastal marketing, cc Coastal IT'],
+         html:
+          '<div class="draft"><div class="draft-head">Email to <b>Lena Ortiz</b>, cc <b>Raj Patel</b> · draft</div>'+
+          '<div class="draft-body"><p>Hi Lena, a quick check on the brand assets for the portal (logo files, colours, hero images). Our web team needs them by Friday to keep the Nov 18 launch.</p><p>Raj, could you also share the points API credentials by Oct 22?</p><p>Thanks, Maya</p></div>'+
+          '<div class="draft-actions" data-approve="1"><button class="btn primary" type="button" data-act="approve">Approve and send</button><button class="btn ghost" type="button" data-act="edit">Edit</button></div></div>'+
+          '<p>I\'ll check Friday morning and flag it in this channel if nothing has arrived.</p>'}
+      ]
+    },
+    qbr:{
+      title:'Partner Review Prep <span>#tam-maya · Slack</span>',
+      flow:[
+        {t:'user', text:"Prep me for Maple Bank's quarterly review on Thursday."},
+        {t:'agent', tools:['DW','Ji','SF','Do'], steps:[
+          '<b>Data warehouse</b> · pulled Q3 bookings and product attach rates',
+          '<b>Jira</b> · listed open and recently closed Maple Bank tickets',
+          '<b>Salesforce</b> · checked renewal date and last meeting notes',
+          '<b>Google Docs</b> · saved a prep doc to the Maple Bank folder'],
+         html:
+          '<p>Here\'s your one-page prep for Thursday:</p>'+
+          '<div class="tiles">'+
+          '<div class="tile"><small>Q3 portal bookings</small><b>$4.2M</b><em>+18% vs Q2</em></div>'+
+          '<div class="tile"><small>Cancel for Any Reason attach</small><b>11.4%</b><em>+2.1 pts</em></div>'+
+          '<div class="tile"><small>Open issues</small><b>3</b><em class="neg">1 urgent (iOS)</em></div>'+
+          '</div>'+
+          '<h4>Talking points</h4>'+
+          '<ul><li>Bookings grew 18%, mostly from the Sept card-holder campaign.</li>'+
+          '<li>Cancel for Any Reason adoption is up. Propose adding Price Freeze in Q1.</li>'+
+          '<li>Own the iOS bug early: ticket HTS-4822 is open and has a fix date.</li></ul>'+
+          '<h4>Watch out for</h4>'+
+          '<p>Renewal is in February, and their last notes ask about reporting delays. Bring the new weekly report as an answer.</p>'+
+          '<p>The prep doc is saved in the Maple Bank folder. Want speaker notes for each point?</p>'}
+      ]
+    }
+  };
+
+  var inner=document.getElementById('inner'), title=document.getElementById('wintitle');
+  var timers=[], current='triage';
+  var reduce=false;
+  try{reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;}catch(e){}
+
+  function clearTimers(){for(var i=0;i<timers.length;i++){clearTimeout(timers[i]);}timers=[];}
+  function later(fn,ms){timers.push(setTimeout(fn,reduce?0:ms));}
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;');}
+  function show(el){inner.appendChild(el);el.offsetWidth;el.className=el.className.replace(' enter','');}
+
+  function userEl(m){
+    var d=document.createElement('div');
+    d.className='msg user enter';
+    d.innerHTML='<div class="who"><span class="av">'+U.ini+'</span>'+U.name+'<span class="role">'+U.role+'</span></div><div>'+esc(m.text)+'</div>';
+    return d;
+  }
+  function toolsHtml(m){
+    var h='';for(var i=0;i<m.tools.length;i++){h+='<span class="tool">'+m.tools[i]+'</span>';}return h;
+  }
+  function agentEl(m,id){
+    var d=document.createElement('div');
+    d.className='msg enter';
+    var list='';for(var i=0;i<m.steps.length;i++){list+='<li>'+m.steps[i]+'</li>';}
+    d.innerHTML='<div class="agentname"><b>HTS Partner Agent</b> · Gumloop</div>'+
+      '<button class="steps-toggle" type="button" aria-expanded="false" aria-controls="sl-'+id+'"><span class="chev">›</span>'+toolsHtml(m)+'<span class="stepcount">'+m.steps.length+' steps</span><span class="spinner"></span></button>'+
+      '<ul class="steplist" id="sl-'+id+'" hidden>'+list+'</ul>'+
+      '<div class="body" hidden>'+m.html+'</div>';
+    return d;
+  }
+
+  function play(key){
+    clearTimers();
+    current=key;
+    inner.innerHTML='';
+    title.innerHTML=S[key].title;
+    var flow=S[key].flow, t=200;
+    for(var i=0;i<flow.length;i++){
+      (function(m,i){
+        if(m.t==='user'){
+          later(function(){show(userEl(m));},t); t+=900;
+        }else{
+          var el=agentEl(m,key+i);
+          later(function(){show(el);},t); t+=1300;
+          later(function(){
+            var sp=el.querySelector('.spinner'); if(sp){sp.parentNode.removeChild(sp);}
+            el.querySelector('.body').hidden=false;
+          },t); t+=1500;
+        }
+      })(flow[i],i);
+    }
+  }
+
+  var tabs=document.querySelectorAll('.tab');
+  for(var i=0;i<tabs.length;i++){
+    tabs[i].addEventListener('click',function(){
+      for(var j=0;j<tabs.length;j++){tabs[j].setAttribute('aria-selected',tabs[j]===this?'true':'false');}
+      play(this.getAttribute('data-s'));
+    });
+  }
+  document.getElementById('replay').addEventListener('click',function(){play(current);});
+
+  inner.addEventListener('click',function(e){
+    var t=e.target;
+    while(t&&t!==inner&&!(t.getAttribute&&(t.getAttribute('data-act')||t.className==='steps-toggle'))){t=t.parentNode;}
+    if(!t||t===inner)return;
+    if(t.className==='steps-toggle'){
+      var open=t.getAttribute('aria-expanded')==='true';
+      t.setAttribute('aria-expanded',open?'false':'true');
+      document.getElementById(t.getAttribute('aria-controls')).hidden=open;
+      return;
+    }
+    var act=t.getAttribute('data-act'), box=t.parentNode;
+    if(act==='approve'){
+      box.innerHTML='<span class="posted">✓ Approved and posted by Maya Chen</span>';
+    }else if(act==='edit'){
+      var bodyEl=box.previousSibling;
+      bodyEl.setAttribute('contenteditable','true');
+      bodyEl.style.outline='2px solid #E4DFE7';
+      bodyEl.focus();
+      t.textContent='Editing…';
+    }
+  });
+
+  play('triage');
+})();
+</script>
+</body>
+</html>
